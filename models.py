@@ -41,7 +41,7 @@ class CodingRecord:
     title: Optional[str]
     author: Optional[str]
     tags: list[str]
-    sentiment: str  # positive|neutral|negative|unsure
+    moods: list[str]  # anger, anticipation, disgust, fear, joy, sadness, surprise, trust
     sentiment_x: float  # -10 to 10 horizontal axis
     sentiment_y: float  # -10 to 10 vertical axis
     notes: str
@@ -49,7 +49,11 @@ class CodingRecord:
     html_sha1: str
     extraction_ok: bool
     error: Optional[str] = None
+    # Keep sentiment for backward compatibility
+    sentiment: Optional[str] = None
     
     def __post_init__(self):
         if self.tags is None:
             self.tags = []
+        if self.moods is None:
+            self.moods = []

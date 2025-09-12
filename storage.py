@@ -36,7 +36,7 @@ def save_record(record: CodingRecord) -> None:
         'title': record.title,
         'author': record.author,
         'tags': record.tags,
-        'sentiment': record.sentiment,
+        'moods': record.moods,
         'sentiment_x': record.sentiment_x,
         'sentiment_y': record.sentiment_y,
         'notes': record.notes,
@@ -44,6 +44,8 @@ def save_record(record: CodingRecord) -> None:
         'html_sha1': record.html_sha1,
         'extraction_ok': record.extraction_ok,
         'error': record.error,
+        # Keep sentiment for backward compatibility
+        'sentiment': getattr(record, 'sentiment', None),
     }
     
     with open(jsonl_path, 'a', encoding='utf-8') as f:
@@ -70,8 +72,9 @@ def update_csv_snapshot() -> None:
             if line:
                 try:
                     record = json.loads(line)
-                    # Join tags for CSV
+                    # Join tags and moods for CSV
                     record['tags_joined'] = '; '.join(record.get('tags', []))
+                    record['moods_joined'] = '; '.join(record.get('moods', []))
                     records.append(record)
                 except json.JSONDecodeError:
                     continue
@@ -82,7 +85,7 @@ def update_csv_snapshot() -> None:
         # Ensure proper column order
         columns = [
             'timestamp_iso', 'coder_id', 'url', 'poem_uuid', 'title', 'author',
-            'tags_joined', 'sentiment', 'sentiment_x', 'sentiment_y', 'notes', 
+            'tags_joined', 'moods_joined', 'sentiment', 'sentiment_x', 'sentiment_y', 'notes', 
             'is_complete', 'html_sha1', 'extraction_ok', 'error'
         ]
         # Only include columns that exist in the data
@@ -124,7 +127,7 @@ def latest_record_for(url: str) -> Optional[CodingRecord]:
                             title=record_dict.get('title'),
                             author=record_dict.get('author'),
                             tags=record_dict.get('tags', []),
-                            sentiment=record_dict.get('sentiment', 'unsure'),
+                            moods=record_dict.get('moods', []),
                             sentiment_x=record_dict.get('sentiment_x', 0.0),
                             sentiment_y=record_dict.get('sentiment_y', 0.0),
                             notes=record_dict.get('notes', ''),
@@ -132,6 +135,7 @@ def latest_record_for(url: str) -> Optional[CodingRecord]:
                             html_sha1=record_dict.get('html_sha1', ''),
                             extraction_ok=record_dict.get('extraction_ok', True),
                             error=record_dict.get('error'),
+                            sentiment=record_dict.get('sentiment'),  # Keep for backward compatibility
                         )
                 except json.JSONDecodeError:
                     continue

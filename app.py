@@ -2,6 +2,7 @@
 
 import os
 import time
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
@@ -61,8 +62,72 @@ ALL_CORPUS_TAGS = TOP_50_TAGS + [
 # Default to top 20 for cleaner interface
 DEFAULT_BASE_TAGS = TOP_20_TAGS
 
-# Sentiment options
+# Mood options - replacing sentiment
+MOOD_OPTIONS = ["anger", "anticipation", "disgust", "fear", "joy", "sadness", "surprise", "trust"]
+
+# Sentiment options (kept for backward compatibility)
 SENTIMENT_OPTIONS = ["positive", "neutral", "negative", "unsure"]
+
+
+def get_last_completed_index_for_coder(coder_id):
+    """Get the index of the last completed poem for a specific coder."""
+    if not coder_id.strip():
+        return 0
+        
+    try:
+        coding_dir = Path("coding_records")
+        if not coding_dir.exists():
+            return 0
+            
+        jsonl_path = coding_dir / "codings.jsonl"
+        if not jsonl_path.exists():
+            return 0
+        
+        completed_urls = set()
+        with open(jsonl_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        record = json.loads(line)
+                        # Only count records for this specific coder
+                        if (record.get('coder_id') == coder_id.strip() and 
+                            record.get('is_complete', False)):
+                            completed_urls.add(record.get('url'))
+                    except json.JSONDecodeError:
+                        continue
+        
+        return len(completed_urls)
+    except Exception:
+        return 0
+
+
+def get_last_completed_index():
+    """Get the index of the last completed poem to resume from next uncompleted one."""
+    try:
+        coding_dir = Path("coding_records")
+        if not coding_dir.exists():
+            return 0
+            
+        jsonl_path = coding_dir / "codings.jsonl"
+        if not jsonl_path.exists():
+            return 0
+        
+        completed_urls = set()
+        with open(jsonl_path, 'r', encoding='utf-8') as f:
+            for line in f:
+                line = line.strip()
+                if line:
+                    try:
+                        record = json.loads(line)
+                        if record.get('is_complete', False):
+                            completed_urls.add(record.get('url'))
+                    except json.JSONDecodeError:
+                        continue
+        
+        return len(completed_urls)
+    except Exception:
+        return 0
 
 
 def initialize_session_state():
@@ -72,6 +137,7 @@ def initialize_session_state():
     if 'base_tags' not in st.session_state:
         st.session_state.base_tags = DEFAULT_BASE_TAGS.copy()
     if 'current_index' not in st.session_state:
+        # Start from index 0, will be updated when coder ID is entered
         st.session_state.current_index = 0
     if 'poems_df' not in st.session_state:
         st.session_state.poems_df = None
@@ -168,10 +234,20 @@ def render_sidebar():
         st.sidebar.error("poets.csv file not found")
     
     # Coder ID
+    previous_coder_id = st.session_state.coder_id
     st.session_state.coder_id = st.sidebar.text_input(
         "Coder ID", 
         value=st.session_state.coder_id
     )
+    
+    # If coder ID changed and is not empty, jump to their last position
+    if (st.session_state.coder_id != previous_coder_id and 
+        st.session_state.coder_id.strip() != ""):
+        new_index = get_last_completed_index_for_coder(st.session_state.coder_id)
+        if new_index != st.session_state.current_index:
+            st.session_state.current_index = new_index
+            fetch_and_parse_current_poem()
+            st.rerun()
     
     # Progress
     if st.session_state.poems_df is not None:
@@ -200,7 +276,7 @@ def render_sentiment_2d():
     st.write("**Click anywhere on the chart to set coordinates:**")
     
     # DPI setting (default 96)
-    dpi = 96
+    dpi = 200
 
     def cm_to_pixels(cm, dpi):
         return int(cm / 2.54 * dpi)
@@ -241,13 +317,44 @@ def render_sentiment_2d():
                 hoverinfo='none'
             ))
         
+        # Add axis labels at the ends
+        fig.add_annotation(
+            x=-8, y=0.5,
+            text="Negative",
+            showarrow=False,
+            font=dict(size=12,color = "red"),
+            xanchor="center"
+        )
+        fig.add_annotation(
+            x=8, y=0.5,
+            text="Positive",
+            showarrow=False,
+           font=dict(size=12,color = "red"),
+            xanchor="center"
+        )
+        fig.add_annotation(
+            x=0.5, y=-7.3,
+            text="Less Intensive",
+            showarrow=False,
+            font=dict(size=12,color = "red"),
+            textangle=90,
+            xanchor="center"
+        )
+        fig.add_annotation(
+            x=0.5, y=7.2,
+            text="More Intensive",
+            showarrow=False,
+            font=dict(size=12,color = "red"),
+            textangle=90,
+            xanchor="center"
+        )
+        
         # Chart layout
         fig.update_layout(
-            title=None,
+            title="",
             
             xaxis=dict(
-                title=None,
-                range=[-10.5, 10.5],
+                range=[-10, 10],
                 showgrid=True,
                 gridcolor='lightgray',
                 zeroline=True,
@@ -260,8 +367,7 @@ def render_sentiment_2d():
             ),
             
             yaxis=dict(
-                title=None,
-                range=[-10.5, 10.5],
+                range=[-10, 10],
                 showgrid=True,
                 gridcolor='lightgray',
                 zeroline=True,
@@ -273,7 +379,7 @@ def render_sentiment_2d():
             
             width=pixels_5cm,
             height=pixels_5cm,
-            margin=dict(l=20, r=5, t=5, b=20),
+            margin=dict(l=50, r=50, t=30, b=50),
             
             plot_bgcolor='white',
             paper_bgcolor='white',
@@ -455,8 +561,7 @@ def render_coding_panel():
         st.session_state.sentiment_y = getattr(existing_record, 'sentiment_y', 0.0)
         st.session_state.coords_loaded_for_url = current_url
     
-    # 2D Sentiment coordinates (outside of form)
-    render_sentiment_2d()
+
     
     # Tag selection with checkboxes (outside of form for real-time updates)
     st.subheader("📝 Tag Selection")
@@ -514,16 +619,30 @@ def render_coding_panel():
     else:
         st.info("No tags selected yet")
     
+    # Mood selection with checkboxes
+    st.subheader("🎭 Mood Tags")
+    selected_moods = []
+    
+    # Load existing moods if available
+    default_moods = []
+    if existing_record and hasattr(existing_record, 'moods') and existing_record.moods:
+        default_moods = existing_record.moods
+    
+    # Create checkbox grid for moods (4 per row)
+    mood_rows = [MOOD_OPTIONS[i:i+4] for i in range(0, len(MOOD_OPTIONS), 4)]
+    for mood_row in mood_rows:
+        cols = st.columns(4)
+        for col_idx, mood in enumerate(mood_row):
+            with cols[col_idx]:
+                is_default_selected = mood in default_moods
+                if st.checkbox(mood.capitalize(), value=is_default_selected, key=f"mood_{mood}"):
+                    selected_moods.append(mood)
+    
+    # 2D Sentiment coordinates (outside of form)
+    render_sentiment_2d()
+    
     # Form for other inputs
-    with st.form("coding_form", clear_on_submit=False):
-        
-        # Sentiment (simplified)
-        sentiment = st.selectbox(
-            "Basic Sentiment",
-            options=SENTIMENT_OPTIONS,
-            index=SENTIMENT_OPTIONS.index(default_sentiment)
-        )
-        
+    with st.form("coding_form", clear_on_submit=True):
         # Notes
         notes = st.text_area(
             "Notes",
@@ -539,7 +658,7 @@ def render_coding_panel():
         
         # Save button
         submitted = st.form_submit_button("💾 Save", type="primary")
-        
+    
         if submitted:
             if not st.session_state.coder_id.strip():
                 st.error("Please enter a Coder ID first")
@@ -559,7 +678,7 @@ def render_coding_panel():
                 title=st.session_state.current_poem_meta.title,
                 author=st.session_state.current_poem_meta.author,
                 tags=all_tags,
-                sentiment=sentiment,
+                moods=selected_moods,
                 sentiment_x=st.session_state.sentiment_x,
                 sentiment_y=st.session_state.sentiment_y,
                 notes=notes.strip(),
@@ -573,11 +692,45 @@ def render_coding_panel():
                 save_record(record)
                 st.success("✅ Saved successfully!")
                 
+                # Clear tag and mood selections after successful save
+                # Delete checkbox keys to force recreation with cleared state
+                keys_to_delete = []
+                
+                # Collect tag checkbox keys that actually exist
+                for tag in TOP_20_TAGS + ALL_CORPUS_TAGS:
+                    main_key = f"main_tag_{tag}"
+                    search_key = f"search_tag_{tag}"
+                    if main_key in st.session_state:
+                        keys_to_delete.append(main_key)
+                    if search_key in st.session_state:
+                        keys_to_delete.append(search_key)
+                
+                # Collect mood checkbox keys that actually exist
+                for mood in MOOD_OPTIONS:
+                    mood_key = f"mood_{mood}"
+                    if mood_key in st.session_state:
+                        keys_to_delete.append(mood_key)
+                
+                # Safely delete all the existing keys
+                for key in keys_to_delete:
+                    try:
+                        if key in st.session_state:
+                            del st.session_state[key]
+                    except KeyError:
+                        pass  # Key doesn't exist, skip it
+                
+                # Reset coordinates
+                st.session_state.sentiment_x = 0.0
+                st.session_state.sentiment_y = 0.0
+                
                 # Auto-advance if complete and not at end
                 if is_complete and st.session_state.current_index < len(st.session_state.poems_df) - 1:
                     time.sleep(1)
                     st.session_state.current_index += 1
                     fetch_and_parse_current_poem()
+                    st.rerun()
+                else:
+                    # If not auto-advancing, still rerun to show cleared selections
                     st.rerun()
                     
             except Exception as e:
