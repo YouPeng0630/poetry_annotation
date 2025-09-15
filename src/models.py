@@ -48,6 +48,9 @@ class CodingRecord:
     is_complete: bool
     html_sha1: str
     extraction_ok: bool
+    year: Optional[str] = None  # Publication year from CSV
+    group: Optional[str] = None  # Group classification from CSV
+    author_url: Optional[str] = None  # Author URL from CSV
     error: Optional[str] = None
     # Keep sentiment for backward compatibility
     sentiment: Optional[str] = None
