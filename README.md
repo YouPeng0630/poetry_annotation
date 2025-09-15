@@ -18,7 +18,6 @@ pip install -r requirements.txt
 Second Step: Run the app
 
 ```bash
-
 streamlit run src/app.py
 
 ## Batch File
