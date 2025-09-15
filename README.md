@@ -1,6 +1,6 @@
 # Poetry Annotation Tool
 
-A Streamlit-based application for qualitative coding of poems from Poets.org.
+A Streamlit-based application for qualitative coding of poems from Poets.org (Test version).
 
 ## Quick Start (Windows)
 
