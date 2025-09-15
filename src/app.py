@@ -12,10 +12,14 @@ import requests
 import plotly.graph_objects as go
 import numpy as np
 
-from .models import CodingRecord
-from .scraper import fetch_html, parse_poem
-from .storage import save_record, latest_record_for_coder, get_coding_stats
-from .utils import sha1
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+from models import CodingRecord
+from scraper import fetch_html, parse_poem
+from storage import save_record, latest_record_for_coder, get_coding_stats
+from utils import sha1
 
 
 # Page configuration

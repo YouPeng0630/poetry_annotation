@@ -9,8 +9,8 @@ import requests
 from bs4 import BeautifulSoup
 from slugify import slugify
 
-from .models import PoemMeta, PoemText
-from .utils import clean_text
+from models import PoemMeta, PoemText
+from utils import clean_text
 
 
 def fetch_html(url: str, use_cache: bool = True) -> str:

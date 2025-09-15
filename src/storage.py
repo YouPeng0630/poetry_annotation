@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Optional, List
 import pandas as pd
 
-from .models import CodingRecord
+from models import CodingRecord
 
 
 def _dict_to_coding_record(record_dict: dict) -> CodingRecord:
