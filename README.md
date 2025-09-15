@@ -9,7 +9,7 @@ Double-click `poetry_tool.bat` and choose:
 1. **Install and Run** - Install dependencies and start application
 2. **Run Application** - Start the app directly
 
-## Mac Version
+## MacOS Version
 
 ### First Step: Install the dependencies with:
 
