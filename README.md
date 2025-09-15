@@ -9,6 +9,18 @@ Double-click `poetry_tool.bat` and choose:
 1. **Install and Run** - Install dependencies and start application
 2. **Run Application** - Start the app directly
 
+## Mac Version
+First Step: Install the dependencies with:
+
+```bash
+pip install -r requirements.txt
+
+Second Step: Run the app
+
+```bash
+
+streamlit run src/app.py
+
 ## Batch File
 
 - `poetry_tool.bat` - Simple tool with two options for setup and running
