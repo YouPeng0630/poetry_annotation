@@ -20,6 +20,6 @@ Double-click `poetry_tool.bat` and choose:
 3. Select relevant tags and moods
 4. Set sentiment coordinates by clicking on the chart
 5. Add notes if needed
-6. Click *save* button to automatically advance to the next poem
+6. Click *save* button to automatically go to the next poem
 
-The application automatically tracks your progress and allows you to resume where you left off.
+The application automatically tracks your progress and allows you to resume where you left off (By entering your Coder ID in the sidebar).
