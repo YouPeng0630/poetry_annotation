@@ -59,7 +59,7 @@ echo To stop: Close this window or press Ctrl+C
 echo ========================================
 echo.
 
-streamlit run app.py
+streamlit run src/app.py
 goto END
 
 :RUN_APP
@@ -83,7 +83,7 @@ echo To stop: Close this window or press Ctrl+C
 echo ========================================
 echo.
 
-streamlit run app.py
+streamlit run src/app.py
 goto END
 
 :END

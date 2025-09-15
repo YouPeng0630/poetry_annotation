@@ -12,10 +12,10 @@ import requests
 import plotly.graph_objects as go
 import numpy as np
 
-from src.models import CodingRecord
-from src.scraper import fetch_html, parse_poem
-from src.storage import save_record, latest_record_for_coder, get_coding_stats
-from src.utils import sha1
+from .models import CodingRecord
+from .scraper import fetch_html, parse_poem
+from .storage import save_record, latest_record_for_coder, get_coding_stats
+from .utils import sha1
 
 
 # Page configuration
@@ -181,7 +181,7 @@ def render_sidebar():
     """Render the sidebar with controls and progress."""
     st.sidebar.title("📝 Poem Coding")
     
-    csv_path = "poets.csv"
+    csv_path = "src/poets.csv"
     if os.path.exists(csv_path):
         if st.session_state.poems_df is None:
             df_to_load = load_poets_csv(csv_path)
