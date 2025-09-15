@@ -564,6 +564,7 @@ def render_coding_panel():
         )
         
         if search_term:
+
             matching_tags = [tag for tag in ALL_CORPUS_TAGS 
                            if search_term.lower() in tag.lower() and tag not in selected_tags and tag not in display_tags]
             
