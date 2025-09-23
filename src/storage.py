@@ -40,6 +40,8 @@ def _dict_to_coding_record(record_dict: dict) -> CodingRecord:
         extraction_ok=record_dict.get('extraction_ok', True),
         error=record_dict.get('error'),
         sentiment=record_dict.get('sentiment'),  # Keep for backward compatibility
+        time_spent_seconds=record_dict.get('time_spent_seconds'),
+        stage_timings=record_dict.get('stage_timings'),
     )
 
 
@@ -113,6 +115,8 @@ def save_record(record: CodingRecord) -> None:
         'error': record.error,
         # Keep sentiment for backward compatibility
         'sentiment': getattr(record, 'sentiment', None),
+        'time_spent_seconds': getattr(record, 'time_spent_seconds', None),
+        'stage_timings': getattr(record, 'stage_timings', None),
     }
     
     with open(jsonl_path, 'a', encoding='utf-8') as f:
@@ -154,7 +158,7 @@ def update_csv_snapshot() -> None:
             'timestamp_iso', 'coder_id', 'url', 'poem_uuid', 'title', 'author', 
             'year', 'group', 'author_url',
             'tags_joined', 'moods_joined', 'sentiment', 'sentiment_x', 'sentiment_y', 'notes', 
-            'is_complete', 'html_sha1', 'extraction_ok', 'error'
+            'is_complete', 'html_sha1', 'extraction_ok', 'error', 'time_spent_seconds', 'stage_timings'
         ]
         # Only include columns that exist in the data
         available_columns = [col for col in columns if col in df.columns]

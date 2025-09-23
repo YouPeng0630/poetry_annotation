@@ -54,6 +54,10 @@ class CodingRecord:
     error: Optional[str] = None
     # Keep sentiment for backward compatibility
     sentiment: Optional[str] = None
+    # Timing data
+    time_spent_seconds: Optional[float] = None  # Time spent on this poem in seconds
+    # Staged timing data
+    stage_timings: Optional[dict] = None  # Dictionary with stage timings: {"poem": 10.5, "themes": 5.2, "mood": 3.1, "chart": 2.8, "notes": 4.0}
     
     def __post_init__(self):
         if self.tags is None:
