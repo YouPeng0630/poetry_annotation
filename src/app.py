@@ -1288,7 +1288,7 @@ def main():
         st.markdown("""
         ### How to use this tool:
         1. Enter your unique Coder ID in the sidebar
-        2. Choose your timing method (Invisible Timer or Staged Display)
+        2. Choose your timing method (Count once or Count on different stage)
         3. The system will automatically load your progress
         4. Start coding poems using the interface on the right
         5. Your progress will be automatically saved
