@@ -35,16 +35,25 @@ ENABLE_UI_CUSTOMIZATION = True  # Set to False to disable all UI customization
 ENABLE_TAG_COLUMNS_SETTING = True  # Set to False to disable tag columns setting
 ENABLE_TAG_FONT_SIZE_SETTING = True  # Set to False to disable font size setting
 ENABLE_TIMING_METHOD_SETTING = True  # Set to False to disable timing method selection
+ENABLE_GRID_DENSITY_SETTING = True  # Set to False to disable grid density setting
 
 DEFAULT_TAG_COLUMNS = 4  # Default number of columns for tag display
 DEFAULT_TAG_FONT_SIZE = "medium"  # Default font size: "small", "medium", "large"
 DEFAULT_TIMING_METHOD = "once"  # Default timing method: "invisible" or "staged"
+DEFAULT_GRID_DENSITY = "1.0"  # Default grid density: "1.0", "0.5", "0.1"
 
 # Font size mappings
 FONT_SIZE_MAPPING = {
     "small": "0.8rem",
     "medium": "1rem", 
     "large": "1.2rem"
+}
+
+# Grid density mappings (number of points per axis)
+GRID_DENSITY_MAPPING = {
+    "1.0": 21,      # 21x21 = 441 points, precision to 1.0
+    "0.5": 41,      # 41x41 = 1681 points, precision to 0.5
+    "0.1": 201      # 201x201 = 40401 points, precision to 0.1
 }
 
 # Global CSS for tag styling
@@ -196,6 +205,8 @@ def initialize_session_state():
         st.session_state.tag_columns = DEFAULT_TAG_COLUMNS
     if 'tag_font_size' not in st.session_state:
         st.session_state.tag_font_size = DEFAULT_TAG_FONT_SIZE
+    if 'grid_density' not in st.session_state:
+        st.session_state.grid_density = DEFAULT_GRID_DENSITY
 
 
 def load_poets_csv(file_path: str) -> Optional[pd.DataFrame]:
@@ -452,6 +463,34 @@ def render_sidebar():
             else:
                 # Use default value when setting is disabled
                 st.session_state.tag_font_size = DEFAULT_TAG_FONT_SIZE
+            
+            if ENABLE_GRID_DENSITY_SETTING:
+                # Handle migration from old values to new values
+                current_density = st.session_state.grid_density
+                if current_density not in ["1.0", "0.5", "0.1"]:
+                    # Map old values to new values
+                    if current_density in ["low", "medium"]:
+                        st.session_state.grid_density = "1.0"
+                    elif current_density == "high":
+                        st.session_state.grid_density = "0.5"
+                    else:
+                        st.session_state.grid_density = DEFAULT_GRID_DENSITY
+                
+                grid_density = st.sidebar.selectbox(
+                    "Chart Precision",
+                    options=["1.0", "0.5", "0.1"],
+                    index=["1.0", "0.5", "0.1"].index(st.session_state.grid_density),
+                    format_func=lambda x: f"Precision {x} (21×21 grid)" if x == "1.0" 
+                                        else f"Precision {x} (41×41 grid)" if x == "0.5"
+                                        else f"Precision {x} (201×201 grid)",
+                    help="Click precision on the sentiment chart. Higher precision = more clickable points but slower performance."
+                )
+                if grid_density != st.session_state.grid_density:
+                    st.session_state.grid_density = grid_density
+                    st.rerun()
+            else:
+                # Use default value when setting is disabled
+                st.session_state.grid_density = DEFAULT_GRID_DENSITY
         
         # Show progress only if coder ID is entered and data is loaded
         if st.session_state.poems_df is not None:
@@ -487,7 +526,10 @@ def render_sentiment_2d():
     def create_chart():
         fig = go.Figure()
         
-        grid_size = 21
+        # Get grid density from session state
+        grid_density = st.session_state.get('grid_density', DEFAULT_GRID_DENSITY)
+        grid_size = GRID_DENSITY_MAPPING.get(grid_density, 21)
+        
         x_vals = np.linspace(-10, 10, grid_size)
         y_vals = np.linspace(-10, 10, grid_size)
         
@@ -939,8 +981,30 @@ def render_mood_stage():
                 if st.checkbox(mood.capitalize(), value=is_default_selected, key=mood_checkbox_key):
                     selected_moods.append(mood)
     
+    # Custom mood tags section
+    with st.expander("🔍 Add Custom Mood Tags"):
+        custom_mood_input = st.text_input(
+            "Add custom mood:",
+            placeholder="Enter moods separated by commas (e.g., melancholy, euphoria, nostalgia)...",
+            help="Use this for mood tags not found in the standard options. Separate multiple moods with commas.",
+            key="staged_custom_mood_input"
+        )
+        
+        if custom_mood_input.strip():
+            # Split by comma and add each mood
+            custom_moods = [mood.strip() for mood in custom_mood_input.split(',') if mood.strip()]
+            for custom_mood in custom_moods:
+                if custom_mood not in selected_moods:
+                    selected_moods.append(custom_mood)
+    
     # Store selected moods in session state
     st.session_state.staged_selected_moods = selected_moods
+    
+    # Display selection summary
+    if selected_moods:
+        st.info(f"✅ Selected {len(selected_moods)} moods: {', '.join(selected_moods[:5])}{'...' if len(selected_moods) > 5 else ''}")
+    else:
+        st.info("No moods selected yet")
     
     if st.button("✅ Finished Moods - Go to Chart", type="primary"):
         stop_stage_timer()
@@ -1179,6 +1243,28 @@ def render_full_coding_panel():
                 if st.checkbox(mood.capitalize(), value=is_default_selected, key=mood_checkbox_key):
                     selected_moods.append(mood)
     
+    # Custom mood tags section
+    with st.expander("🔍 Add Custom Mood Tags"):
+        custom_mood_input = st.text_input(
+            "Add custom mood:",
+            placeholder="Enter moods separated by commas (e.g., melancholy, euphoria, nostalgia)...",
+            help="Use this for mood tags not found in the standard options. Separate multiple moods with commas.",
+            key=f"custom_mood_input{mood_key_suffix}"
+        )
+        
+        if custom_mood_input.strip():
+            # Split by comma and add each mood
+            custom_moods = [mood.strip() for mood in custom_mood_input.split(',') if mood.strip()]
+            for custom_mood in custom_moods:
+                if custom_mood not in selected_moods:
+                    selected_moods.append(custom_mood)
+    
+    # Display mood selection summary
+    if selected_moods:
+        st.info(f"✅ Selected {len(selected_moods)} moods: {', '.join(selected_moods[:5])}{'...' if len(selected_moods) > 5 else ''}")
+    else:
+        st.info("No moods selected yet")
+    
     render_sentiment_2d()
     
     with st.form("coding_form", clear_on_submit=False):
@@ -1288,7 +1374,7 @@ def main():
         st.markdown("""
         ### How to use this tool:
         1. Enter your unique Coder ID in the sidebar
-        2. Choose your timing method (Count once or Count on different stage)
+        2. Choose your timing method (Count once or count on each stage)
         3. The system will automatically load your progress
         4. Start coding poems using the interface on the right
         5. Your progress will be automatically saved
